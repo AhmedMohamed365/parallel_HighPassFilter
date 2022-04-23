@@ -91,8 +91,8 @@ void createImage(int* image, int width, int height, int index)
 			
 			//float kernelResult = 0; 
 		
-		image[(i+1) * width + (j+1) ] = -1 * image[(i ) * width + (j + 1)] +  -1 *image[(i + 1) * width + (j + 2)] 
-			+  -1 * image[(i + 1) * width + (j )]  +  4 * image[(i + 1) * width + (j + 1)]  +  -1 * image[(i + 2) * width + (j + 1)]
+			image[(i + 1) * width + (j + 1)] = -1 * image[(i)*width + (j + 1)] + -1 * image[(i + 1) * width + (j + 2)]
+				+ -1 * image[(i + 1) * width + (j)] + 4 * image[(i + 1) * width + (j + 1)] + -1 * image[(i + 2) * width + (j + 1)];
 
 			if (image[i*width + j] < 0)
 			{
