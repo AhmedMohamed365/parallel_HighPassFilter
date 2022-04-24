@@ -59,6 +59,7 @@ int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of ima
 			Green[i * BM.Width + j] = c.G;*/
 
 			input[i * BM.Width + j] = ((c.R + c.B + c.G) / 3); //gray scale value equals the average of RGB values
+			//input[i * BM.Width + j] = ((c.R + c.B + c.G) ); //gray scale value equals the average of RGB values
 
 
 			//cout << input[i * BM.Width + j] << " ";
@@ -101,11 +102,11 @@ void createImage(int* image, int width, int height, int index)
 
 			else
 			{
-				output[i  * width + j ] =   4 * image[(i)*width + (j )]
+				(output[i  * width + j ] =   4 * image[(i)*width + (j )]
 				 -1 * image[(i ) * width + (j + 1)]
 				-1 * image[(i ) * width + (j-1)]
 				-1* image[(i + 1) * width + (j )]
-				-1 * image[(i -1) * width + (j )]     ;
+				-1 * image[(i -1) * width + (j )] ) ;
 			}
 			
 
@@ -149,7 +150,7 @@ int main()
 
 	System::String^ imagePath;
 	std::string img;
-	img = "..//Data//Input//g.jpg";
+	img = "..//Data//Input//f.jpg";
 
 	imagePath = marshal_as<System::String^>(img);
 	int* imageData = inputImage(&ImageWidth, &ImageHeight, imagePath);
