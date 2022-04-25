@@ -5,9 +5,7 @@
 #include<string.h>
 #include<msclr\marshal_cppstd.h>
 #include <ctime>// include this header 
-
 #pragma once
-
 #using <mscorlib.dll>
 #using <System.dll>
 #using <System.Drawing.dll>
@@ -71,7 +69,7 @@ int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of ima
 }
 
 
-void createImage(int* image, int width, int height, int index , int rank , int worldsize )
+void createImage(int* image, int width, int height, int index, int rank, int worldsize)
 {
 	System::Drawing::Bitmap MyNewImage(width, height);
 	int* output = new int[(height) * (width)];
@@ -84,7 +82,7 @@ void createImage(int* image, int width, int height, int index , int rank , int w
 	height -= 1;*/
 	float result = 0;
 
-	for (int i = (rank * MyNewImage.Height )/ worldsize; i < ((rank+1) * MyNewImage.Height) / worldsize; i++)
+	for (int i = (rank * MyNewImage.Height) / worldsize; i < ((rank + 1) * MyNewImage.Height) / worldsize; i++)
 	{
 		for (int j = 0; j < MyNewImage.Width; j++)
 		{
@@ -127,6 +125,21 @@ void createImage(int* image, int width, int height, int index , int rank , int w
 		MyNewImage.Save("..//Data//Output//outputRes" + index + ".png");
 		cout << "result Image Saved " << index << endl;
 	}
+	if (rank == 2)
+	{
+		MyNewImage.Save("..//Data//Output//outputResss" + index + ".png");
+		cout << "result Image Saved " << index << endl;
+	}
+	if (rank == 1)
+	{
+		MyNewImage.Save("..//Data//Output//outputRess" + index + ".png");
+		cout << "result Image Saved " << index << endl;
+	}
+	if (rank == 3)
+	{
+		MyNewImage.Save("..//Data//Output//outputRessss" + index + ".png");
+		cout << "result Image Saved " << index << endl;
+	}
 }
 
 
@@ -144,7 +157,7 @@ int main()
 
 
 	int imageWidth = 4, imageHeight = 4;
-	int start_s, stop_s, TotalTime = 0, * imageData;
+	int start_s, stop_s, TotalTime = 0;
 	if (rank == 0)
 	{
 		System::String^ imagePath;
@@ -152,14 +165,23 @@ int main()
 		img = "..//Data//Input//try2.jpg";
 
 		imagePath = marshal_as<System::String^>(img);
-		imageData = inputImage(&imageWidth, &imageHeight, imagePath);
+		inputImage(&imageWidth, &imageHeight, imagePath);
 
 	}
 	MPI_Bcast(&imageHeight, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&imageWidth, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&imageData, (imageHeight ) * (imageWidth ), MPI_INT, 0, MPI_COMM_WORLD);
+	int* imageData = new int[imageHeight * imageWidth];
+	if (rank == 0)
+	{
+		System::String^ imagePath;
+		std::string img;
+		img = "..//Data//Input//try2.jpg";
+		imagePath = marshal_as<System::String^>(img);
+		imageData = inputImage(&imageWidth, &imageHeight, imagePath);
+	}
+	MPI_Bcast(imageData, (imageHeight) * (imageWidth), MPI_INT, 0, MPI_COMM_WORLD);
 	start_s = clock();
-	createImage(imageData, imageWidth, imageHeight,0,rank , world_size);
+	createImage(imageData, imageWidth, imageHeight, 0, rank, world_size);
 	stop_s = clock();
 	TotalTime += (stop_s - start_s) / double(CLOCKS_PER_SEC) * 1000;
 	cout << "time: " << TotalTime << endl;
@@ -167,5 +189,4 @@ int main()
 	MPI_Finalize();
 	return 0;
 }
-
 
