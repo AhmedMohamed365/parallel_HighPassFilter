@@ -109,7 +109,8 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 
 	MPI_Gather(output, width * height, MPI_INT, imageData, width * height, MPI_INT, 0, MPI_COMM_WORLD);
 
-
+	//to be revised.
+	delete[] output;
 	if (rank == 0)
 	{
 
@@ -121,7 +122,7 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 
 			image = &imageData[(11 * ((origheigh / worldsize) + origheigh % worldsize)) * MyNewImage.Width];
 
-			delete output;
+		
 			output = new int[origheigh % worldsize * MyNewImage.Width];
 			cout << "got in ";
 			for (int i = 0; i < origheigh % worldsize; i++)
