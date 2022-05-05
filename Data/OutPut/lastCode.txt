@@ -105,14 +105,14 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 		}
 	}
 
+	
+	
+		MPI_Gather(output, width * height , MPI_INT, imageData, width * height, MPI_INT, 0, MPI_COMM_WORLD);
 
-
-	MPI_Gather(output, width * height, MPI_INT, imageData, width * height, MPI_INT, 0, MPI_COMM_WORLD);
-
-
+	
 	if (rank == 0)
 	{
-
+		
 		//process the extra part
 
 
@@ -173,7 +173,7 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 		if (origheigh % worldsize != 0)
 		{
 			cout << "got in ";
-			for (int i = 0; i < origheigh % worldsize; i++)
+			for (int i = 0; i <  origheigh % worldsize; i++)
 			{
 				for (int j = 0; j < MyNewImage.Width; j++)
 				{
@@ -202,9 +202,9 @@ int main()
 	if (rank == 0)
 	{
 		System::String^ imagePath;
-		std::string img, imageName;
+		std::string img , imageName;
 		cin >> imageName;
-		img = "..//Data//Input//" + imageName;
+		img = "..//Data//Input//"+imageName;
 		imagePath = marshal_as<System::String^>(img);
 		int* imageData = inputImage(&imageWidth, &imageHeight, imagePath);
 		working = new int[chunck];
@@ -218,10 +218,10 @@ int main()
 		bool equalDivide = ((imageHeight) % world_size == 0);
 
 		int size = chunck;
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i <	size ; i++)
 			working[i] = imageData[i];
 
-
+		
 
 		if (equalDivide)
 		{
@@ -237,22 +237,22 @@ int main()
 			createImage(working, imageWidth, (((imageHeight / world_size))), 0, rank, world_size, imageData, imageHeight);
 
 		}
-
+		
 		else
 
 		{
 			int i;
-			for (i = 1; i < world_size; i++)
+			for ( i= 1; i < world_size ; i++)
 			{
 
-				MPI_Send(&imageData[(i * ((imageHeight / world_size))) * imageWidth], chunck, MPI_INT, i, i, MPI_COMM_WORLD);
+				MPI_Send(&imageData[(i * ((imageHeight / world_size) )) * imageWidth], chunck, MPI_INT, i, i, MPI_COMM_WORLD);
 
 
 			}
 
 			//work on extra in  the Master processor
 
-			createImage(working, imageWidth, (imageHeight / world_size), 0, rank, world_size, imageData, imageHeight);
+			createImage(working, imageWidth, (imageHeight / world_size) , 0, rank, world_size, imageData, imageHeight);
 
 		}
 		//start_s = clock();
