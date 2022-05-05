@@ -161,8 +161,8 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 			}
 		}
 
-
-		for (int i = 0; i < outputimage.Height - origheigh % worldsize; i++)
+		int lastIndex = outputimage.Height - origheigh % worldsize;
+		for (int i = 0; i < lastIndex; i++)
 		{
 			for (int j = 0; j < MyNewImage.Width; j++)
 			{
@@ -171,6 +171,8 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 			}
 		}
 
+
+		
 		if (origheigh % worldsize != 0)
 		{
 			cout << "got in ";
@@ -179,7 +181,7 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 				for (int j = 0; j < MyNewImage.Width; j++)
 				{
 					System::Drawing::Color c = System::Drawing::Color::FromArgb(output[i * width + j], output[i * width + j], output[i * width + j]);
-					outputimage.SetPixel(j, i, c);
+					outputimage.SetPixel(j, lastIndex-1 +i, c);
 				}
 			}
 		}
