@@ -27,34 +27,32 @@ int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of ima
 
 	OriginalImageWidth = BM.Width;
 	OriginalImageHeight = BM.Height;
-	*w = BM.Width;
-	*h = BM.Height;
-	int* Red = new int[BM.Height * BM.Width];
-	int* Green = new int[BM.Height * BM.Width];
-	int* Blue = new int[BM.Height * BM.Width];
-	input = new int[(BM.Height + 1) * (BM.Width + 1)];
+	*w = BM.Width +2;
+	*h = BM.Height +2;
+	
+	input = new int[(BM.Height + 2) * (BM.Width + 2)];
 
 
-	for (int i = 0; i <= BM.Height; i++)
+	for (int i = 0; i <= BM.Height+1; i++)
 	{
 
-		for (int j = 0; j <= BM.Width; j++)
+		for (int j = 0; j <= BM.Width+1; j++)
 		{
 			System::Drawing::Color c;
-			if (i == BM.Height || j == BM.Width || i == 0 || j == 0)
+			if (i == BM.Height+1 || j == BM.Width+1 || i == 0 || j == 0)
 			{
 				c = System::Drawing::Color::FromArgb(0, 0, 0);
 			}
 			else
 			{
-				c = BM.GetPixel(j, i);
+				c = BM.GetPixel(j-1, i-1);
 
 			}
 
 
 
 
-			input[i * BM.Width + j] = ((c.R + c.B + c.G) / 3); //gray scale value equals the average of RGB values
+			input[i * (BM.Width+2) + j] = ((c.R + c.B + c.G) / 3); //gray scale value equals the average of RGB values
 
 		}
 
@@ -69,6 +67,7 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 	System::Drawing::Bitmap MyNewImage(width, height);
 	System::Drawing::Bitmap outputimage(width, origheigh);
 	int* output = new int[(height) * (width)];
+
 
 	for (int i = 0; i < height; i++)
 	{
@@ -110,7 +109,7 @@ void createImage(int* image, int width, int height, int index, int rank, int wor
 	MPI_Gather(output, width * height, MPI_INT, imageData, width * height, MPI_INT, 0, MPI_COMM_WORLD);
 
 	//to be revised.
-	delete[] output;
+	delete output;
 	if (rank == 0)
 	{
 
@@ -222,9 +221,13 @@ int main()
 
 		int size = chunck;
 		for (int i = 0; i < size; i++)
+		{
 			working[i] = imageData[i];
-
-
+			cout << imageData[i] <<" ";
+		}
+			
+		cout << "SIZE:" << size<<endl;
+		
 
 		if (equalDivide)
 		{
@@ -262,6 +265,8 @@ int main()
 		/*stop_s = clock();
 		TotalTime += (stop_s - start_s) / double(CLOCKS_PER_SEC) * 1000;
 		cout << "time: " << TotalTime << endl;*/
+
+		
 		free(working);
 	}
 	if (rank != 0)
@@ -271,6 +276,7 @@ int main()
 		MPI_Recv(&imageWidth, 1, MPI_INT, 0, rank + 2000, MPI_COMM_WORLD, &status);
 		working = new int[chunck];
 		MPI_Recv(working, chunck, MPI_INT, 0, rank, MPI_COMM_WORLD, &status);
+
 		start_s = clock();
 		createImage(working, imageWidth, (imageHeight / world_size), 0, rank, world_size, working, imageHeight);
 
