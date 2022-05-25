@@ -5,9 +5,7 @@
 #include<string.h>
 #include<msclr\marshal_cppstd.h>
 #include <ctime>// include this header 
-
 #pragma once
-
 #using <mscorlib.dll>
 #using <System.dll>
 #using <System.Drawing.dll>
@@ -18,7 +16,6 @@ using namespace msclr::interop;
 int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of image in w & h
 {
 	int* input;
-
 
 	int OriginalImageWidth, OriginalImageHeight;
 
@@ -31,9 +28,7 @@ int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of ima
 	OriginalImageHeight = BM.Height;
 	*w = BM.Width;
 	*h = BM.Height;
-	int* Red = new int[BM.Height * BM.Width];
-	int* Green = new int[BM.Height * BM.Width];
-	int* Blue = new int[BM.Height * BM.Width];
+	
 	input = new int[(BM.Height + 1) * (BM.Width + 1)];
 
 
@@ -52,65 +47,35 @@ int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of ima
 				c = BM.GetPixel(j, i);
 
 			}
-
-
-			/*Red[i * BM.Width + j] = c.R;
-			Blue[i * BM.Width + j] = c.B;
-			Green[i * BM.Width + j] = c.G;*/
-
 			input[i * BM.Width + j] = ((c.R + c.B + c.G) / 3); //gray scale value equals the average of RGB values
-			//input[i * BM.Width + j] = ((c.R + c.B + c.G) ); //gray scale value equals the average of RGB values
 
-
-			//cout << input[i * BM.Width + j] << " ";
 		}
-
-		//cout << endl;
 	}
+
+
+
+	
 	return input;
 }
 
 
-void createImage(int* image, int width, int height, int index)
+void createImage(int* image, int width, int height, int index, int rank, int worldsize, int* imageData, int origheigh, int offset)
 {
-	System::Drawing::Bitmap MyNewImage(width , height );
 
-	//System::Drawing::Bitmap temp(width+1, height+1);
+	System::Drawing::Bitmap outputimage(width, origheigh);
+	MPI_Status status;
+	int* output = new int[(height) * (width)];
 
-	int* output = new int[(height ) * (width )];
-
-	int kernal[3][3] = { {0,-1,0},
-						{-1,4,-1},
-						{0,-1,0} };
-
-	/*width -= 1;
-	height -= 1;*/
-	float result = 0;
-
-	for (int i = 0; i < MyNewImage.Height; i++)
+	for (int i = 0; i < height; i++)
 	{
-
-		for (int j = 0; j < MyNewImage.Width; j++)
+		for (int j = 0; j < width; j++)
 		{
-			//i * OriginalImageWidth + j
 
-			//float kernelResult = 0; 
-			if (i == height || j == width || i == 0 || j == 0)
-			{
-				output[i * width + j] = 0;
-			}
-
-			else
-			{
-				(output[i  * width + j ] =   4 * image[(i)*width + (j )]
-				 -1 * image[(i ) * width + (j + 1)]
-				-1 * image[(i ) * width + (j-1)]
-				-1* image[(i + 1) * width + (j )]
-				-1 * image[(i -1) * width + (j )] ) ;
-			}
-			
-
-			//output[i * width + j] = image[(i + 1) * width + (j + 1)];
+			output[i * width + j] = 4 * image[(i + 1) * width + (j + 1)] // self 
+				- 1 * image[(i)*width + (j + 1)] 
+				- 1 * image[(i)*width + (j)]  
+				- 1 * image[(i + 1) * width + (j)] 
+				- 1 * image[(i)*width + (j)]; 
 
 			if (output[i * width + j] < 0)
 			{
@@ -122,56 +87,137 @@ void createImage(int* image, int width, int height, int index)
 			}
 
 
-			System::Drawing::Color c = System::Drawing::Color::FromArgb(output[i * width + j], output[i * width + j], output[i * width + j]);
-			MyNewImage.SetPixel(j, i, c);
 		}
 	}
-	MyNewImage.Save("..//Data//Output//outputRes" + index + ".png");
-	cout << "result Image Saved " << index << endl;
+	if (rank == 0)
+	{
+		int* whole = new int[origheigh * width];
+		if (worldsize != 1)
+		{
+			for (int i = 1; i < worldsize; i++)
+			{
+				MPI_Recv(&whole[(offset)+(i * (origheigh / worldsize * width))], origheigh / worldsize * width, MPI_INT, i, i * 1000000, MPI_COMM_WORLD, &status);
+			}
+		}
+
+		for (int i = 0; i < outputimage.Height; i++)
+		{
+			for (int j = 0; j < outputimage.Width; j++)
+			{
+
+				if (i < height)
+				{
+					whole[i * width + j] = output[i * width + j];
+				}
+
+				System::Drawing::Color c = System::Drawing::Color::FromArgb(whole[i * width + j], whole[i * width + j], whole[i * width + j]);
+				outputimage.SetPixel(j, i, c);
+			}
+			//cout << endl;
+		}
+		outputimage.Save("..//Data//Output//outputRes00" + index  + ".jpg");
+		cout << "result Image Saved " << index << endl;
+
+		free(whole);
+		//outputimage.Dispose();
+
+		
+	}
+	else
+	{
+
+		MPI_Send(output, origheigh / worldsize * width, MPI_INT, 0, 1000000 * rank, MPI_COMM_WORLD);
+
+		free(output);
+	}
 }
-
-
 int main()
 {
-	int rank = 0, world_size;
+	int rank, world_size;
+	int times = 10;
 
-	/*MPI_Init(NULL, NULL);
+	MPI_Init(NULL, NULL);
 
 
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);*/
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	while (times--)
+	{
 
 
+		int imageWidth = 4, imageHeight = 4;
+		int start_s, stop_s, TotalTime = 0;
+		int* working   = NULL;
+		if (rank == 0)
+		{
+
+			System::String^ imagePath;
+			std::string img;
+			//cin >> img;
+			img = "5N.png";
+
+			start_s = clock();
+
+			img = "..//Data//Input//" + img;
+			imagePath = marshal_as<System::String^>(img);
+			int* imageData = inputImage(&imageWidth, &imageHeight, imagePath);
+			working = new int[(imageWidth + 2) * ((imageHeight / world_size) + (imageHeight % world_size) + 2)];
+			for (int i = 1; i < world_size; i++)
+			{
+				MPI_Send(&imageHeight, 1, MPI_INT, i, 1000 + i, MPI_COMM_WORLD);
+				MPI_Send(&imageWidth, 1, MPI_INT, i, 2000 + i, MPI_COMM_WORLD);
+			}
+			if (world_size == 1)
+			{
+
+				createImage(imageData, imageWidth, (((imageHeight / world_size)) + (imageHeight % world_size)), times, rank, world_size, imageData, imageHeight, (imageHeight % world_size) * (imageWidth));
+				stop_s = clock();
+				TotalTime += (stop_s - start_s) / double(CLOCKS_PER_SEC) * 1000;
+				cout << "time: " << TotalTime << endl;
+				free(imageData);
+				
+				continue;
+			}
+			for (int i = 0; i < (imageWidth + 2) * ((imageHeight / world_size) + (imageHeight % world_size) + 2); i++)
+				working[i] = imageData[i];
+			for (int i = 1; i < world_size; i++)
+			{
+				MPI_Send(&imageData[(i * (imageHeight / world_size)) * imageWidth], (((imageHeight / world_size) + 1) * (imageWidth + 2)), MPI_INT, i, i, MPI_COMM_WORLD);
+
+			}
+			
+
+			createImage(working, imageWidth, (((imageHeight / world_size)) + (imageHeight % world_size)), times, rank, world_size, imageData, imageHeight, (imageHeight % world_size) * (imageWidth));
+			stop_s = clock();
+			TotalTime += (stop_s - start_s) / double(CLOCKS_PER_SEC) * 1000;
+			cout << "time: " << TotalTime << endl;
+			free(working);
 
 
-	int ImageWidth = 4, ImageHeight = 4;
+			free(imageData);
+		}
+		if (rank != 0)
+		{
+			MPI_Status status;
+			MPI_Recv(&imageHeight, 1, MPI_INT, 0, rank + 1000, MPI_COMM_WORLD, &status);
+			MPI_Recv(&imageWidth, 1, MPI_INT, 0, rank + 2000, MPI_COMM_WORLD, &status);
+			working = new int[(imageWidth + 2) * ((imageHeight / world_size) + 1)];
+			MPI_Recv(working, ((2 + (imageHeight / world_size)) * (imageWidth + 2)), MPI_INT, 0, rank, MPI_COMM_WORLD, &status);
+			start_s = clock();
+			createImage(working, imageWidth, (imageHeight / world_size), times, rank, world_size, working, imageHeight, (imageHeight % world_size) * (imageWidth));
 
-	int start_s, stop_s, TotalTime = 0;
+			stop_s = clock();
+			TotalTime += (stop_s - start_s) / double(CLOCKS_PER_SEC) * 1000;
 
-	System::String^ imagePath;
-	std::string img;
-	img = "..//Data//Input//f.jpg";
-
-	imagePath = marshal_as<System::String^>(img);
-	int* imageData = inputImage(&ImageWidth, &ImageHeight, imagePath);
-
-
-	start_s = clock();
-	createImage(imageData, ImageWidth, ImageHeight, 0);
-	stop_s = clock();
-	TotalTime += (stop_s - start_s) / double(CLOCKS_PER_SEC) * 1000;
-	cout << "time: " << TotalTime << endl;
-
-	system("pause");
+			free(working);
+		}
 
 
-	free(imageData);
-
-
+		
+	
+	}
+	MPI_Finalize();
 
 	return 0;
-
 }
-
-
-
